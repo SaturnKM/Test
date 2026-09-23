@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+<meta name="theme-color" content="#0a0e1a" />
+<title>Game Library</title>
+<style>
+:root{
+  --bg:#0a0e1a;--bg-2:#111827;
+  --panel:rgba(255,255,255,.05);--panel-strong:rgba(255,255,255,.08);
+  --border:rgba(255,255,255,.08);
+  --text:#e5e7eb;--text-dim:#9ca3af;
+  --accent:#7dd3fc;--accent-2:#a78bfa;
+  --danger:#f87171;--success:#4ade80;
+  --radius:16px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  overflow-x:hidden;-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:-20%;
+  background:
+    radial-gradient(circle at 20% 20%,rgba(125,211,252,.15),transparent 40%),
+    radial-gradient(circle at 80% 80%,rgba(167,139,250,.15),transparent 40%);
+  z-index:-1;pointer-events:none}
+#app{min-height:100vh;padding-bottom:80px;position:relative}
+.view{display:none;padding:16px;max-width:720px;margin:0 auto}
+.view.active{display:block}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:12px 4px 20px;gap:12px}
+.topbar h1{font-size:22px;font-weight:700;margin:0;flex:1;text-align:center}
+.topbar h1:first-child{text-align:left}
+.icon-btn{width:42px;height:42px;border-radius:12px;border:1px solid var(--border);
+  background:var(--panel);color:var(--text);font-size:22px;line-height:1;cursor:pointer;
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  transition:transform .15s,background .15s;flex-shrink:0}
+.icon-btn:active{transform:scale(.92);background:var(--panel-strong)}
+.overall{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);
+  padding:20px;margin-bottom:16px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px)}
+.overall-label{font-size:12px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px}
+.overall-percent{font-size:42px;font-weight:800;margin:6px 0 12px;
+  background:linear-gradient(135deg,var(--accent),var(--accent-2));
+  -webkit-background-clip:text;background-clip:text;color:transparent}
+.progress{height:8px;background:rgba(255,255,255,.06);border-radius:999px;overflow:hidden;margin-bottom:8px}
+.progress-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--accent),var(--accent-2));
+  border-radius:999px;transition:width .4s ease}
+.overall-count{font-size:13px;color:var(--text-dim)}
+.toolbar{display:flex;gap:10px;margin-bottom:14px}
+.search,.filter{flex:1;padding:12px 14px;background:var(--panel);border:1px solid var(--border);
+  border-radius:12px;color:var(--text);font-size:15px;outline:none;
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  -webkit-appearance:none;appearance:none}
+.filter{flex:0 0 130px}
+.search:focus,.filter:focus{border-color:var(--accent)}
+.game-list,.item-list{list-style:none;padding:0;margin:0}
+.game-item,.item-row{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);
+  padding:14px 16px;margin-bottom:10px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  display:flex;align-items:center;gap:12px;transition:transform .15s,background .15s}
+.game-item:active{transform:scale(.98);background:var(--panel-strong)}
+.game-item .thumb{width:52px;height:52px;border-radius:10px;background:linear-gradient(135deg,#1f2937,#374151);
+  flex-shrink:0;object-fit:cover;display:flex;align-items:center;justify-content:center;
+  color:var(--text-dim);font-weight:800;font-size:20px;overflow:hidden}
+.game-item .thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.game-item .info{flex:1;min-width:0}
+.game-item .name{font-size:16px;font-weight:600;margin-bottom:6px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.game-item .meta{font-size:12px;color:var(--text-dim);margin-bottom:6px}
+.game-item .bar{height:5px;background:rgba(255,255,255,.06);border-radius:999px;overflow:hidden}
+.game-item .bar > div{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-2));border-radius:999px}
+.game-item .percent{font-size:14px;font-weight:700;color:var(--accent);min-width:44px;text-align:right}
+.item-row{padding:12px 16px;cursor:pointer;user-select:none}
+.item-row.done .item-name{text-decoration:line-through;color:var(--text-dim)}
+.item-check{width:22px;height:22px;border-radius:7px;border:2px solid var(--border);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  transition:background .15s,border-color .15s}
+.item-row.done .item-check{background:linear-gradient(135deg,var(--accent),var(--accent-2));border-color:transparent}
+.item-row.done .item-check::after{content:"✓";color:#0a0e1a;font-size:14px;font-weight:900}
+.item-name{flex:1;font-size:15px}
+.item-desc{font-size:12px;color:var(--text-dim);margin-top:3px}
+.item-thumb{width:32px;height:32px;border-radius:8px;object-fit:cover;flex-shrink:0;background:#1f2937}
+.empty{text-align:center;color:var(--text-dim);padding:40px 20px;font-size:14px}
+.data-actions{display:flex;flex-direction:column;gap:12px}
+button.primary,button.secondary,button.danger{padding:14px 18px;border-radius:12px;
+  border:1px solid var(--border);font-size:15px;font-weight:600;cursor:pointer;
+  transition:transform .15s,background .15s}
+button.primary{background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#0a0e1a;border:none}
+button.secondary{background:var(--panel);color:var(--text)}
+button.danger{background:rgba(248,113,113,.12);color:var(--danger);border-color:rgba(248,113,113,.25)}
+button.primary:active,button.secondary:active,button.danger:active{transform:scale(.97)}
+.disclaimer{margin-top:24px;font-size:12px;color:var(--text-dim);text-align:center;line-height:1.6}
+.section-title{font-size:12px;text-transform:uppercase;letter-spacing:1px;
+  color:var(--text-dim);margin:20px 4px 10px}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:12px;color:var(--text-dim);margin-bottom:6px;
+  text-transform:uppercase;letter-spacing:1px}
+.field input{width:100%;padding:14px;border-radius:12px;border:1px solid var(--border);
+  background:var(--panel);color:var(--text);font-size:15px;outline:none}
+.field input:focus{border-color:var(--accent)}
+.field .hint{font-size:11px;color:var(--text-dim);margin-top:6px;line-height:1.5}
+.status{padding:10px 14px;border-radius:12px;font-size:13px;margin-bottom:14px;display:none}
+.status.ok{display:block;background:rgba(74,222,128,.1);color:var(--success);border:1px solid rgba(74,222,128,.25)}
+.status.err{display:block;background:rgba(248,113,113,.1);color:var(--danger);border:1px solid rgba(248,113,113,.25)}
+.status.info{display:block;background:var(--panel);color:var(--text);border:1px solid var(--border)}
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;display:flex;
+  background:rgba(10,14,26,.85);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border-top:1px solid var(--border);padding:8px 0 max(8px,env(safe-area-inset-bottom));z-index:50}
+.nav-btn{flex:1;background:none;border:none;color:var(--text-dim);font-size:13px;
+  font-weight:600;padding:10px;cursor:pointer}
+.nav-btn.active{color:var(--accent)}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;
+  align-items:center;justify-content:center;padding:24px;z-index:100;
+  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);overflow-y:auto}
+.modal.active{display:flex}
+.modal-box{background:var(--bg-2);border:1px solid var(--border);border-radius:20px;
+  padding:22px;width:100%;max-width:440px;max-height:90vh;overflow-y:auto}
+.modal-box h2{margin:0 0 16px;font-size:18px}
+.modal-input{width:100%;padding:14px;border-radius:12px;border:1px solid var(--border);
+  background:var(--panel);color:var(--text);font-size:16px;outline:none;margin-bottom:14px}
+.modal-input:focus{border-color:var(--accent)}
+.modal-actions{display:flex;gap:10px;margin-top:8px}
+.modal-actions button{flex:1}
+.image-picker{width:100%;height:150px;border-radius:14px;border:1px dashed var(--border);
+  background:var(--panel);display:flex;flex-direction:column;align-items:center;justify-content:center;
+  color:var(--text-dim);font-size:13px;cursor:pointer;margin-bottom:14px;overflow:hidden;position:relative}
+.image-picker img{width:100%;height:100%;object-fit:cover}
+.image-picker .placeholder{text-align:center;padding:12px}
+.row-btns{display:flex;gap:10px;margin-bottom:14px}
+.row-btns button{flex:1;padding:10px;font-size:13px;border-radius:10px}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--text-dim);
+  border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;
+  vertical-align:middle;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- HOME -->
+  <section id="view-home" class="view active">
+    <header class="topbar">
+      <h1>Game Library</h1>
+      <button id="btn-add" class="icon-btn">+</button>
+    </header>
+    <div class="overall">
+      <div class="overall-label">Overall Completion</div>
+      <div class="overall-percent" id="overall-percent">0%</div>
+      <div class="progress"><div class="progress-fill" id="overall-fill"></div></div>
+      <div class="overall-count" id="overall-count">0 / 0</div>
+    </div>
+    <div class="toolbar">
+      <input id="search" class="search" type="search" placeholder="Search games..." />
+      <select id="filter" class="filter">
+        <option value="all">All</option>
+        <option value="incomplete">Incomplete</option>
+        <option value="complete">100%</option>
+        <option value="unplayed">Unplayed</option>
+      </select>
+    </div>
+    <ul id="game-list" class="game-list"></ul>
+    <div id="empty-state" class="empty">No games yet. Tap + to add one, or sync Steam from Settings.</div>
+  </section>
+
+  <!-- GAME DETAIL -->
+  <section id="view-game" class="view">
+    <header class="topbar">
+      <button class="icon-btn" data-back>←</button>
+      <h1 id="game-title">Game</h1>
+      <button id="btn-add-item" class="icon-btn">+</button>
+    </header>
+    <div class="overall">
+      <div class="progress"><div class="progress-fill" id="game-fill"></div></div>
+      <div class="overall-count" id="game-count">0 / 0</div>
+    </div>
+    <div id="steam-actions" style="display:none;margin-bottom:14px">
+      <button id="btn-sync-ach" class="secondary" style="width:100%">Sync achievements from Steam</button>
+    </div>
+    <ul id="item-list" class="item-list"></ul>
+    <div id="game-empty" class="empty">No items yet. Tap + to add one.</div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section id="view-settings" class="view">
+    <header class="topbar">
+      <button class="icon-btn" data-back>←</button>
+      <h1>Settings</h1>
+      <span style="width:42px"></span>
+    </header>
+
+    <div class="section-title">Steam Integration</div>
+
+    <div id="steam-status" class="status"></div>
+
+    <div class="field">
+      <label>Steam API Key</label>
+      <input id="steam-key" type="password" placeholder="Your personal Steam API key" autocomplete="off" />
+      <div class="hint">
+        Get one at steamcommunity.com/dev/apikey. It's stored only on your device.
+        It is never uploaded anywhere.
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Steam ID (64-bit)</label>
+      <input id="steam-id" type="text" placeholder="e.g. 76561198000000000" inputmode="numeric" />
+      <div class="hint">
+        Find yours at steamid.io — the "steamID64" value.
+      </div>
+    </div>
+
+    <div class="row-btns">
+      <button id="btn-save-steam" class="primary">Save</button>
+      <button id="btn-test-steam" class="secondary">Test</button>
+    </div>
+
+    <button id="btn-sync-library" class="primary" style="width:100%">Sync Steam Library</button>
+
+    <div class="section-title">Data</div>
+    <div class="data-actions">
+      <button id="btn-export" class="primary">Export Progress</button>
+      <button id="btn-import" class="secondary">Import Progress</button>
+      <button id="btn-reset" class="danger">Reset All Data</button>
+    </div>
+
+    <p class="disclaimer">
+      Unofficial fan-made tracker. Not affiliated with Valve, Steam, Roblox, or any game company.
+      Steam data is fetched through the official Steam Web API using the user's own API key.
+      All data stored locally on your device.
+    </p>
+  </section>
+
+  <!-- NAV -->
+  <nav class="bottom-nav">
+    <button data-nav="home" class="nav-btn active">Library</button>
+    <button data-nav="settings" class="nav-btn">Settings</button>
+  </nav>
+
+  <!-- MODAL: Add game -->
+  <div id="modal-game" class="modal">
+    <div class="modal-box">
+      <h2>Add Game</h2>
+      <input id="mg-name" class="modal-input" type="text" placeholder="Game name" />
+      <div class="image-picker" id="mg-picker">
+        <div class="placeholder">Tap to add a picture<br><span style="font-size:11px">(optional)</span></div>
+      </div>
+      <input type="file" id="mg-file" accept="image/*" style="display:none" />
+      <input id="mg-url" class="modal-input" type="url" placeholder="…or paste an image URL" />
+      <div class="modal-actions">
+        <button id="mg-cancel" class="secondary">Cancel</button>
+        <button id="mg-save" class="primary">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Add item -->
+  <div id="modal-item" class="modal">
+    <div class="modal-box">
+      <h2 id="mi-title">Add Item</h2>
+      <input id="mi-name" class="modal-input" type="text" placeholder="Item or achievement" />
+      <div class="modal-actions">
+        <button id="mi-cancel" class="secondary">Cancel</button>
+        <button id="mi-save" class="primary">Save</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ---------------- State ---------------- */
+var STORAGE_KEY = "gamelibrary_v1";
+var SETTINGS_KEY = "gamelibrary_settings_v1";
+var state = { version: 1, games: [] };
+var settings = { steamKey: "", steamId: "" };
+var currentGameId = null;
+var editingGameId = null;
+
+function storageAvailable(){
+  try{ localStorage.setItem("__t","1"); localStorage.removeItem("__t"); return true; }
+  catch(e){ return false; }
+}
+var HAS_STORAGE = storageAvailable();
+
+function loadAll(){
+  if(!HAS_STORAGE) return;
+  try{
+    var raw = localStorage.getItem(STORAGE_KEY);
+    if(raw) state = JSON.parse(raw);
+    var s = localStorage.getItem(SETTINGS_KEY);
+    if(s) settings = JSON.parse(s);
+  }catch(e){}
+}
+function saveAll(){
+  if(!HAS_STORAGE) return;
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+  }catch(e){}
+}
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+function $(id){ return document.getElementById(id); }
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g,function(c){
+    return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+  });
+}
+
+/* ---------------- Navigation ---------------- */
+function show(view){
+  var views = document.querySelectorAll(".view");
+  for(var i=0;i<views.length;i++) views[i].classList.remove("active");
+  $("view-"+view).classList.add("active");
+  var navs = document.querySelectorAll(".nav-btn");
+  for(var j=0;j<navs.length;j++){
+    navs[j].classList.toggle("active", navs[j].getAttribute("data-nav")===view);
+  }
+  window.scrollTo(0,0);
+}
+var navBtns = document.querySelectorAll("[data-nav]");
+for(var i=0;i<navBtns.length;i++){
+  navBtns[i].addEventListener("click",function(){
+    var t = this.getAttribute("data-nav");
+    if(t==="home"){ currentGameId=null; renderHome(); }
+    if(t==="settings"){ renderSettings(); }
+    show(t);
+  });
+}
+var backBtns = document.querySelectorAll("[data-back]");
+for(var k=0;k<backBtns.length;k++){
+  backBtns[k].addEventListener("click",function(){
+    currentGameId=null; renderHome(); show("home");
+  });
+}
+
+/* ---------------- Progress ---------------- */
+function pct(g){
+  if(!g.items || !g.items.length) return 0;
+  var done=0;
+  for(var i=0;i<g.items.length;i++) if(g.items[i].done) done++;
+  return Math.round((done/g.items.length)*100);
+}
+
+/* ---------------- Home ---------------- */
+function renderHome(){
+  var list = $("game-list");
+  var empty = $("empty-state");
+  var search = $("search").value.toLowerCase();
+  var filter = $("filter").value;
+
+  var games = state.games.slice();
+  if(search) games = games.filter(function(g){ return g.name.toLowerCase().indexOf(search)!==-1; });
+  if(filter==="incomplete") games = games.filter(function(g){ return pct(g)<100; });
+  if(filter==="complete") games = games.filter(function(g){ return pct(g)===100 && g.items.length>0; });
+  if(filter==="unplayed") games = games.filter(function(g){ return !g.items.length; });
+
+  games.sort(function(a,b){
+    var pa=pct(a), pb=pct(b);
+    if(pa!==pb) return pa-pb;
+    return a.name.localeCompare(b.name);
+  });
+
+  list.innerHTML = "";
+  empty.style.display = games.length ? "none" : "block";
+  if(!state.games.length) empty.textContent = "No games yet. Tap + to add one, or sync Steam from Settings.";
+  else if(!games.length) empty.textContent = "No games match.";
+
+  games.forEach(function(g){
+    var done = g.items.filter(function(i){return i.done;}).length;
+    var total = g.items.length;
+    var p = pct(g);
+
+    var li = document.createElement("li");
+    li.className = "game-item";
+
+    var thumb = document.createElement("div");
+    thumb.className = "thumb";
+    if(g.image){
+      var img = document.createElement("img");
+      img.src = g.image;
+      img.alt = "";
+      img.onerror = function(){
+        thumb.innerHTML = "";
+        thumb.textContent = (g.name[0]||"?").toUpperCase();
+      };
+      thumb.appendChild(img);
+    } else {
+      thumb.textContent = (g.name[0]||"?").toUpperCase();
+    }
+
+    var info = document.createElement("div");
+    info.className = "info";
+    info.innerHTML =
+      '<div class="name">'+escapeHtml(g.name)+'</div>'+
+      '<div class="meta">'+done+' / '+total+' items'+(g.source==="steam"?' • Steam':'')+'</div>'+
+      '<div class="bar"><div style="width:'+p+'%"></div></div>';
+
+    var pctEl = document.createElement("div");
+    pctEl.className = "percent";
+    pctEl.textContent = p+"%";
+
+    li.appendChild(thumb);
+    li.appendChild(info);
+    li.appendChild(pctEl);
+
+    li.addEventListener("click", function(){ openGame(g.id); });
+    li.addEventListener("contextmenu", function(e){
+      e.preventDefault();
+      var opts = "Delete \"" + g.name + "\"?";
+      if(g.source==="steam") opts += "\n(This only removes it from your local list, not from Steam.)";
+      if(confirm(opts)){
+        state.games = state.games.filter(function(x){ return x.id!==g.id; });
+        saveAll(); renderHome();
+      }
+    });
+    list.appendChild(li);
+  });
+
+  renderOverall();
+}
+
+function renderOverall(){
+  var total=0, done=0;
+  state.games.forEach(function(g){
+    total += g.items.length;
+    done += g.items.filter(function(i){return i.done;}).length;
+  });
+  var p = total ? Math.round((done/total)*100) : 0;
+  $("overall-percent").textContent = p+"%";
+  $("overall-fill").style.width = p+"%";
+  $("overall-count").textContent = done+" / "+total+" items across "+state.games.length+" games";
+}
+
+/* ---------------- Game detail ---------------- */
+function openGame(id){
+  currentGameId = id;
+  var g = state.games.filter(function(x){return x.id===id;})[0];
+  if(!g) return;
+  $("game-title").textContent = g.name;
+  $("steam-actions").style.display = g.source==="steam" ? "block" : "none";
+  renderGame();
+  show("game");
+}
+
+function renderGame(){
+  var g = state.games.filter(function(x){return x.id===currentGameId;})[0];
+  if(!g) return;
+  var list = $("item-list");
+  var empty = $("game-empty");
+  list.innerHTML = "";
+  empty.style.display = g.items.length ? "none" : "block";
+
+  g.items.forEach(function(item, idx){
+    var li = document.createElement("li");
+    li.className = "item-row" + (item.done ? " done" : "");
+
+    var check = document.createElement("div");
+    check.className = "item-check";
+    li.appendChild(check);
+
+    if(item.icon){
+      var im = document.createElement("img");
+      im.className = "item-thumb";
+      im.src = item.icon;
+      im.alt = "";
+      li.appendChild(im);
+    }
+
+    var wrap = document.createElement("div");
+    wrap.style.flex = "1";
+    wrap.style.minWidth = "0";
+    var nameEl = document.createElement("div");
+    nameEl.className = "item-name";
+    nameEl.textContent = item.name;
+    wrap.appendChild(nameEl);
+    if(item.desc){
+      var d = document.createElement("div");
+      d.className = "item-desc";
+      d.textContent = item.desc;
+      wrap.appendChild(d);
+    }
+    li.appendChild(wrap);
+
+    li.addEventListener("click", function(){
+      item.done = !item.done;
+      saveAll(); renderGame(); renderOverall();
+    });
+    li.addEventListener("contextmenu", function(e){
+      e.preventDefault();
+      if(confirm('Delete "'+item.name+'"?')){
+        g.items.splice(idx,1);
+        saveAll(); renderGame(); renderOverall();
+      }
+    });
+    list.appendChild(li);
+  });
+
+  var done = g.items.filter(function(i){return i.done;}).length;
+  var total = g.items.length;
+  var p = pct(g);
+  $("game-fill").style.width = p+"%";
+  $("game-count").textContent = done+" / "+total+" items ("+p+"%)";
+}
+
+/* ---------------- Add game modal ---------------- */
+var modalGame = $("modal-game");
+var mgPicker = $("mg-picker");
+var mgFile = $("mg-file");
+var mgUrl = $("mg-url");
+var mgName = $("mg-name");
+var pendingImage = null;
+
+function openAddGame(){
+  editingGameId = null;
+  mgName.value = "";
+  mgUrl.value = "";
+  pendingImage = null;
+  mgPicker.innerHTML = '<div class="placeholder">Tap to add a picture<br><span style="font-size:11px">(optional)</span></div>';
+  modalGame.classList.add("active");
+  setTimeout(function(){ mgName.focus(); }, 50);
+}
+function closeAddGame(){
+  modalGame.classList.remove("active");
+  pendingImage = null;
+}
+
+mgPicker.addEventListener("click", function(){ mgFile.click(); });
+mgFile.addEventListener("change", function(){
+  var f = mgFile.files && mgFile.files[0];
+  if(!f) return;
+  var reader = new FileReader();
+  reader.onload = function(){
+    pendingImage = reader.result;
+    renderPickerPreview();
+  };
+  reader.readAsDataURL(f);
+});
+mgUrl.addEventListener("input", function(){
+  var v = mgUrl.value.trim();
+  if(v){ pendingImage = v; renderPickerPreview(); }
+});
+function renderPickerPreview(){
+  if(!pendingImage){
+    mgPicker.innerHTML = '<div class="placeholder">Tap to add a picture<br><span style="font-size:11px">(optional)</span></div>';
+    return;
+  }
+  mgPicker.innerHTML = "";
+  var img = document.createElement("img");
+  img.src = pendingImage;
+  mgPicker.appendChild(img);
+}
+
+$("mg-cancel").addEventListener("click", closeAddGame);
+modalGame.addEventListener("click", function(e){ if(e.target===modalGame) closeAddGame(); });
+$("mg-save").addEventListener("click", function(){
+  var name = mgName.value.trim();
+  if(!name){ alert("Enter a name."); return; }
+  state.games.push({
+    id: uid(),
+    source: "manual",
+    name: name,
+    image: pendingImage || "",
+    items: []
+  });
+  saveAll();
+  closeAddGame();
+  renderHome();
+});
+
+/* ---------------- Add item modal ---------------- */
+var modalItem = $("modal-item");
+function openAddItem(){
+  $("mi-name").value = "";
+  modalItem.classList.add("active");
+  setTimeout(function(){ $("mi-name").focus(); },50);
+}
+function closeAddItem(){ modalItem.classList.remove("active"); }
+$("mi-cancel").addEventListener("click", closeAddItem);
+modalItem.addEventListener("click", function(e){ if(e.target===modalItem) closeAddItem(); });
+$("mi-save").addEventListener("click", function(){
+  var v = $("mi-name").value.trim();
+  if(!v) return;
+  var g = state.games.filter(function(x){return x.id===currentGameId;})[0];
+  if(g){ g.items.push({ id: uid(), name: v, done: false }); saveAll(); renderGame(); renderOverall(); }
+  closeAddItem();
+});
+$("mi-name").addEventListener("keydown", function(e){ if(e.key==="Enter") $("mi-save").click(); });
+
+/* ---------------- Buttons ---------------- */
+$("btn-add").addEventListener("click", openAddGame);
+$("btn-add-item").addEventListener("click", openAddItem);
+$("search").addEventListener("input", renderHome);
+$("filter").addEventListener("change", renderHome);
+
+/* ---------------- Export / Import ---------------- */
+$("btn-export").addEventListener("click", function(){
+  var json = JSON.stringify({ state: state, settings: { steamId: settings.steamId } });
+  var b64;
+  try{ b64 = btoa(unescape(encodeURIComponent(json))); }
+  catch(e){ b64 = btoa(json); }
+  var text = "GAMELIB:v1:" + b64;
+  if(navigator.share){
+    navigator.share({ title: "Game Library Export", text: text }).catch(function(){});
+  } else if(navigator.clipboard){
+    navigator.clipboard.writeText(text).then(function(){ alert("Export copied to clipboard."); })
+    .catch(function(){ prompt("Copy this export string:", text); });
+  } else {
+    prompt("Copy this export string:", text);
+  }
+});
+$("btn-import").addEventListener("click", function(){
+  var text = prompt("Paste your export string:");
+  if(!text) return;
+  var m = text.trim().match(/^GAMELIB:v1:(.+)$/);
+  if(!m){ alert("Invalid export string."); return; }
+  try{
+    var json = decodeURIComponent(escape(atob(m[1])));
+    var data = JSON.parse(json);
+    if(data.state && data.state.games){ state = data.state; }
+    else if(data.games){ state = data; }
+    else throw new Error("bad data");
+    if(data.settings && data.settings.steamId) settings.steamId = data.settings.steamId;
+    saveAll(); renderHome();
+    alert("Imported successfully.");
+  }catch(e){ alert("Failed to import: "+e.message); }
+});
+$("btn-reset").addEventListener("click", function(){
+  if(!confirm("Erase all games and progress? This cannot be undone.")) return;
+  state = { version: 1, games: [] };
+  saveAll(); renderHome();
+});
+
+/* ---------------- Settings ---------------- */
+function renderSettings(){
+  $("steam-key").value = settings.steamKey || "";
+  $("steam-id").value = settings.steamId || "";
+}
+function setStatus(msg, kind){
+  var el = $("steam-status");
+  el.className = "status" + (kind ? " " + kind : "");
+  el.textContent = msg;
+}
+$("btn-save-steam").addEventListener("click", function(){
+  settings.steamKey = $("steam-key").value.trim();
+  settings.steamId = $("steam-id").value.trim();
+  saveAll();
+  setStatus("Saved on this device.", "ok");
+});
+
+
+
+/* ---------------- Steam API ---------------- */
+function steamUrl(endpoint, params){
+  var base = "https://api.steampowered.com/" + endpoint;
+  var all = Object.assign({ key: settings.steamKey, format: "json" }, params);
+  var qs = Object.keys(all).map(function(k){
+    return encodeURIComponent(k)+"="+encodeURIComponent(all[k]);
+  }).join("&");
+  return base + "?" + qs;
+}
+
+function validateSteamInputs(){
+  if(!settings.steamKey){ setStatus("Enter your Steam API key first.", "err"); return false; }
+  if(!settings.steamId){ setStatus("Enter your Steam ID (64-bit) first.", "err"); return false; }
+  if(!/^\d{17}$/.test(settings.steamId)){
+    setStatus("Steam ID must be 17 digits (steamID64 format).", "err"); return false;
+  }
+  return true;
+}
+
+$("btn-test-steam").addEventListener("click", function(){
+  settings.steamKey = $("steam-key").value.trim();
+  settings.steamId = $("steam-id").value.trim();
+  saveAll();
+  if(!validateSteamInputs()) return;
+  setStatus("Testing…", "info");
+  fetch(steamUrl("IPlayerService/GetOwnedGames/v1/", {
+    steamid: settings.steamId,
+    include_appinfo: 0,
+    include_played_free_games: 1
+  }))
+  .then(function(r){ return r.json(); })
+  .then(function(j){
+    if(!j.response){ setStatus("Empty response — is your profile public?", "err"); return; }
+    var n = (j.response.games || []).length;
+    if(n === 0){
+      setStatus("Connected, but no games were returned. Make sure your Steam profile and game details are public.", "err");
+      return;
+    }
+    setStatus("Connected. Found " + n + " games.", "ok");
+  })
+  .catch(function(e){
+    setStatus("Failed: " + e.message + ". Check key and Steam ID.", "err");
+  });
+});
+
+$("btn-sync-library").addEventListener("click", function(){
+  settings.steamKey = $("steam-key").value.trim();
+  settings.steamId = $("steam-id").value.trim();
+  saveAll();
+  if(!validateSteamInputs()) return;
+
+  setStatus('<span class="spinner"></span>Fetching your Steam library…', "info");
+
+  fetch(steamUrl("IPlayerService/GetOwnedGames/v1/", {
+    steamid: settings.steamId,
+    include_appinfo: 1,
+    include_played_free_games: 1
+  }))
+  .then(function(r){ return r.json(); })
+  .then(function(j){
+    var games = (j.response && j.response.games) || [];
+    if(!games.length){
+      setStatus("No games returned. Check that your Steam profile is public.", "err");
+      return;
+    }
+    var added = 0, updated = 0;
+    games.forEach(function(sg){
+      var existing = state.games.filter(function(g){ return g.appid === sg.appid; })[0];
+      var cover = "https://cdn.cloudflare.steamstatic.com/steam/apps/" + sg.appid + "/header.jpg";
+      if(existing){
+        existing.name = sg.name;
+        existing.image = cover;
+        updated++;
+      } else {
+        state.games.push({
+          id: uid(),
+          source: "steam",
+          appid: sg.appid,
+          name: sg.name,
+          image: cover,
+          playtime: sg.playtime_forever || 0,
+          items: []
+        });
+        added++;
+      }
+    });
+    saveAll();
+    renderHome();
+    setStatus("Synced. " + added + " new, " + updated + " updated. Open a game and tap 'Sync achievements'.", "ok");
+  })
+  .catch(function(e){
+    setStatus("Sync failed: " + e.message, "err");
+  });
+});
+
+/* ---------------- Achievements sync ---------------- */
+$("btn-sync-ach").addEventListener("click", function(){
+  var g = state.games.filter(function(x){ return x.id === currentGameId; })[0];
+  if(!g || g.source !== "steam" || !g.appid) return;
+  if(!settings.steamKey || !settings.steamId){
+    alert("Save your Steam API key and Steam ID in Settings first.");
+    return;
+  }
+
+  var btn = this;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Syncing achievements…';
+
+  // 1) Get schema (names + icons)
+  var schemaUrl = steamUrl("ISteamUserStats/GetSchemaForGame/v2/", { appid: g.appid });
+  // 2) Get player achievements (which ones unlocked)
+  var achUrl = steamUrl("ISteamUserStats/GetPlayerAchievements/v1/", {
+    steamid: settings.steamId,
+    appid: g.appid,
+    l: "en"
+  });
+
+  Promise.all([
+    fetch(schemaUrl).then(function(r){ return r.json(); }),
+    fetch(achUrl).then(function(r){ return r.json(); })
+  ]).then(function(res){
+    var schema = res[0];
+    var ach = res[1];
+
+    var defs = {};
+    try{
+      var arr = schema.game.availableGameStats.achievements || [];
+      arr.forEach(function(a){
+        defs[a.name] = { display: a.displayName || a.name, desc: a.description || "", icon: a.icon || "" };
+      });
+    }catch(e){}
+
+    var playerAchs = [];
+    try{ playerAchs = ach.playerstats.achievements || []; }
+    catch(e){
+      btn.disabled = false;
+      btn.textContent = "Sync achievements from Steam";
+      alert("Could not fetch achievements. This game may not have achievements, or your profile may be private.");
+      return;
+    }
+
+    // Merge into g.items, keeping manual ones (those without steamName)
+    var existingSteam = {};
+    g.items.forEach(function(it){
+      if(it.steamName) existingSteam[it.steamName] = it;
+    });
+
+    playerAchs.forEach(function(pa){
+      var def = defs[pa.apiname] || { display: pa.apiname, desc: "", icon: "" };
+      var existing = existingSteam[pa.apiname];
+      if(existing){
+        existing.name = def.display;
+        existing.desc = def.desc;
+        existing.icon = def.icon;
+        existing.done = pa.achieved === 1;
+      } else {
+        g.items.push({
+          id: uid(),
+          steamName: pa.apiname,
+          name: def.display,
+          desc: def.desc,
+          icon: def.icon,
+          done: pa.achieved === 1
+        });
+      }
+    });
+
+    saveAll();
+    renderGame();
+    renderOverall();
+    btn.disabled = false;
+    btn.textContent = "Sync achievements from Steam";
+    alert("Achievements synced: " + playerAchs.length + " total.");
+  }).catch(function(e){
+    btn.disabled = false;
+    btn.textContent = "Sync achievements from Steam";
+    alert("Sync failed: " + e.message);
+  });
+});
+
+/* ---------------- Init ---------------- */
+if(!HAS_STORAGE){
+  setTimeout(function(){
+    alert("Warning: this browser is blocking local storage.\nProgress will not be saved between sessions.\nOpen the app via https:// or a local server for full functionality.");
+  }, 500);
+}
+
+loadAll();
+renderHome();
+renderSettings();
+
+})();
+</script>
+</body>
+</html>
+
